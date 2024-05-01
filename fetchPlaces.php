@@ -1,8 +1,6 @@
 <?php
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "Tripper";
+
+include("db.php");
 
 // Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);

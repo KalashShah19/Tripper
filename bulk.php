@@ -131,18 +131,7 @@
             display: block;
             width: 100%;
             padding: 10px;
-            background-color: blue;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        
-        .bulk {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            background-color: orangered;
+            background-color: #f44336;
             color: #fff;
             border: none;
             border-radius: 5px;
@@ -150,63 +139,78 @@
         }
 
         .add-place button[type="submit"]:hover {
-            background-color: blue;
+            background-color: #ff6f61;
         }
     </style>
 </head>
 
 <body>
-    <?php include('header.php') ?>
+    <?php include ('header.php') ?>
     <section class="add-place">
         <div class="container">
-            <h2>Add New Place</h2>
+            <h2>Add Places in Bulk</h2>
             <form method="post">
-                <label for="name"> Name :</label>
-                <input type="text" id="name" name="name" required>
-
-                <label for="location"> Location :</label>
-                <input type="text" id="location" name="location" required>
-
-                <label for="price"> Price:</label>
-                <input type="number" id="price" name="price" required>
-
-                <button type="submit" class="btn">Add</button><br>
-                <button onclick="window.location.href='bulk.php'" class="bulk">Add Places in Bulk</button>
+                <label for="name"> Enter CSV :</label>
+                <textarea name="csv" id="csv" cols="30" rows="40"></textarea>
+                <button type="submit" class="btn"> Add Places </button>
             </form>
         </div>
     </section>
     <?php
-    include('db.php');
-    
+    include ('db.php');
+
     $conn = new mysqli($servername, $username, $password, $dbname);
 
     if ($conn->connect_error) {
         die("Connection failed: " . $conn->connect_error);
     }
-
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $name = $_POST["name"];
-        $location = $_POST["location"];
-        $price = $_POST["price"];
-
-        if (empty($name) || empty($location) || empty($price)) {
-            echo "All fields are required.";
-        } else {
-            $sql = "INSERT INTO places (name, location, price) VALUES (?, ?, ?)";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("sss", $name, $location, $price);
-
-            // Execute the statement
-            if ($stmt->execute()) {
-                echo "<script> alert('New Place added successfully!'); window.location.href='destinations.php'; </script>";
-            } else {
-                echo "Error: " . $sql . "<br>" . $conn->error;
-            }
-
-            $stmt->close();
-            $conn->close();
+        // Extract data from the form
+        $details = $_POST['csv'];
+    
+        // Split the input into lines
+        $lines = explode("\n", $details);
+    
+        // Create connection
+        $conn = new mysqli($servername, $username, $password, $dbname);
+    
+        // Check connection
+        if ($conn->connect_error) {
+            die("Connection failed: " . $conn->connect_error);
         }
+    
+        // Prepare the SQL statement
+        $sql = "INSERT INTO places (name, location, price) VALUES (?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+    
+        // Loop through each line and insert into the database
+        foreach ($lines as $line) {
+            // Split each line by comma to get name, location, and price
+            $data = explode(",", $line);
+    
+            // Check if data is valid
+            if (count($data) === 3) {
+                $name = trim($data[0]);
+                $location = trim($data[1]);
+                $price = trim($data[2]);
+    
+                // Bind parameters and execute the statement
+                $stmt->bind_param("sss", $name, $location, $price);
+                if ($stmt->execute()) {
+                    echo "<center> New place '$name' added successfully! </center>";
+                } else {
+                    echo "Error: " . $sql . "<br>" . $conn->error;
+                }
+            } else {
+                echo "Invalid data format: $line <br>";
+            }
+        }
+    
+        // Close statement and connection
+        $stmt->close();
+        $conn->close();
     }
+    
     ?>
 
     <footer>

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tripper</title>
+    <title>Budget Maker</title>
     <style>
         * {
             margin: 0;
@@ -131,18 +131,7 @@
             display: block;
             width: 100%;
             padding: 10px;
-            background-color: blue;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        
-        .bulk {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            background-color: orangered;
+            background-color: #f44336;
             color: #fff;
             border: none;
             border-radius: 5px;
@@ -150,34 +139,34 @@
         }
 
         .add-place button[type="submit"]:hover {
-            background-color: blue;
+            background-color: #ff6f61;
         }
     </style>
 </head>
 
 <body>
-    <?php include('header.php') ?>
+    <?php include ('header.php');
+        $id = $_GET["id"];
+    ?>
     <section class="add-place">
         <div class="container">
-            <h2>Add New Place</h2>
+            <h2> Add Expenses </h2>
             <form method="post">
-                <label for="name"> Name :</label>
+                <label for="name"> Name : </label>
                 <input type="text" id="name" name="name" required>
 
-                <label for="location"> Location :</label>
-                <input type="text" id="location" name="location" required>
+                <label for="amount"> Amount : </label>
+                <input type="number" id="amount" name="amount" required>
 
-                <label for="price"> Price:</label>
-                <input type="number" id="price" name="price" required>
+                <input type="hidden" id="plan_id" value="<?php echo $id ?>" name="plan_id" required>
 
-                <button type="submit" class="btn">Add</button><br>
-                <button onclick="window.location.href='bulk.php'" class="bulk">Add Places in Bulk</button>
+                <button type="submit" class="btn">Add</button>
             </form>
         </div>
     </section>
+
     <?php
-    include('db.php');
-    
+    include ("db.php");
     $conn = new mysqli($servername, $username, $password, $dbname);
 
     if ($conn->connect_error) {
@@ -185,27 +174,21 @@
     }
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $name = $_POST["name"];
-        $location = $_POST["location"];
-        $price = $_POST["price"];
+        $name = $_POST['name'];
+        $amount = $_POST['amount'];
+        $planId = $_POST['plan_id'];
 
-        if (empty($name) || empty($location) || empty($price)) {
-            echo "All fields are required.";
+        $sql = "INSERT INTO expenses (name, amount, plan_id) VALUES (?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("sii", $name, $amount, $planId);
+
+        if ($stmt->execute() === TRUE) {
+            echo "<script> alert('Expense added successfully!'); window.history.go(-2); </script>";
         } else {
-            $sql = "INSERT INTO places (name, location, price) VALUES (?, ?, ?)";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("sss", $name, $location, $price);
-
-            // Execute the statement
-            if ($stmt->execute()) {
-                echo "<script> alert('New Place added successfully!'); window.location.href='destinations.php'; </script>";
-            } else {
-                echo "Error: " . $sql . "<br>" . $conn->error;
-            }
-
-            $stmt->close();
-            $conn->close();
+            echo "Error: " . $sql . "<br>" . $conn->error;
         }
+
+        $conn->close();
     }
     ?>
 

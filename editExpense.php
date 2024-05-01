@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tripper</title>
+    <title>Budget Maker</title>
     <style>
         * {
             margin: 0;
@@ -131,18 +131,7 @@
             display: block;
             width: 100%;
             padding: 10px;
-            background-color: blue;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        
-        .bulk {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            background-color: orangered;
+            background-color: #f44336;
             color: #fff;
             border: none;
             border-radius: 5px;
@@ -150,62 +139,72 @@
         }
 
         .add-place button[type="submit"]:hover {
-            background-color: blue;
+            background-color: #ff6f61;
         }
     </style>
 </head>
 
 <body>
-    <?php include('header.php') ?>
     <section class="add-place">
         <div class="container">
-            <h2>Add New Place</h2>
-            <form method="post">
-                <label for="name"> Name :</label>
-                <input type="text" id="name" name="name" required>
+            <h2>Edit Expense</h2>
+            <?php
+            include ("db.php");
 
-                <label for="location"> Location :</label>
-                <input type="text" id="location" name="location" required>
+            $conn = new mysqli($servername, $username, $password, $dbname);
 
-                <label for="price"> Price:</label>
-                <input type="number" id="price" name="price" required>
+            $expense_id = $_GET["id"];
+            $sql = "SELECT * FROM expenses WHERE expense_id = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("i", $expense_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
 
-                <button type="submit" class="btn">Add</button><br>
-                <button onclick="window.location.href='bulk.php'" class="bulk">Add Places in Bulk</button>
-            </form>
+            if ($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                ?>
+                <form method="post">
+                    <input type="hidden" name="expense_id" value="<?php echo $row['expense_id']; ?>">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" value="<?php echo $row['name']; ?>" required>
+
+                    <label for="amount">Amount:</label>
+                    <input type="number" id="amount" name="amount" value="<?php echo $row['amount']; ?>" required>
+
+                    <input type="hidden" id="plan_id" value="<?php echo $id ?>" name="plan_id" required>
+
+                    <button type="submit" class="btn">Update</button>
+                </form>
+                <?php
+            } else {
+                echo "No expense found.";
+            }
+            ?>
         </div>
     </section>
-    <?php
-    include('db.php');
-    
-    $conn = new mysqli($servername, $username, $password, $dbname);
 
-    if ($conn->connect_error) {
-        die("Connection failed: " . $conn->connect_error);
-    }
+
+    <?php
+    include ("db.php");
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $name = $_POST["name"];
-        $location = $_POST["location"];
-        $price = $_POST["price"];
+        $expense_id = $_POST['expense_id'];
+        $name = $_POST['name'];
+        $amount = $_POST['amount'];
 
-        if (empty($name) || empty($location) || empty($price)) {
-            echo "All fields are required.";
+        $sql = "UPDATE expenses SET name = ?, amount = ? WHERE expense_id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("sii", $name, $amount, $expense_id);
+
+        if ($stmt->execute()) {
+            echo "<script>alert('Expense updated successfully!');
+            window.history.go(-2); </script>";
         } else {
-            $sql = "INSERT INTO places (name, location, price) VALUES (?, ?, ?)";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("sss", $name, $location, $price);
-
-            // Execute the statement
-            if ($stmt->execute()) {
-                echo "<script> alert('New Place added successfully!'); window.location.href='destinations.php'; </script>";
-            } else {
-                echo "Error: " . $sql . "<br>" . $conn->error;
-            }
-
-            $stmt->close();
-            $conn->close();
+            echo "Error updating expense: " . $conn->error;
         }
+
+        $stmt->close();
+        $conn->close();
     }
     ?>
 

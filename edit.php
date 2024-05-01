@@ -29,7 +29,6 @@
             color: #fff;
             text-align: center;
             padding: 20px 0;
-            position: fixed;
             bottom: 0;
             width: 100%;
         }
@@ -88,16 +87,10 @@
     <h2>Edit Place</h2>
 
     <?php
-    // Database connection
-    $servername = "localhost";
-    $username = "root";
-    $password = "";
-    $dbname = "Tripper";
-
-    // Create connection
+    include("db.php");
+        
     $conn = new mysqli($servername, $username, $password, $dbname);
 
-    // Check connection
     if ($conn->connect_error) {
         die("Connection failed: " . $conn->connect_error);
     }
@@ -105,15 +98,13 @@
     if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['id'])) {
         $id = $_GET['id'];
 
-        // Fetch data from database for the specific ID
-        $sql = "SELECT * FROM places WHERE id = $id";
+        $sql = "SELECT * FROM places WHERE place_id = $id";
         $result = $conn->query($sql);
 
         if ($result->num_rows > 0) {
-            // Output edit form with existing data
             $row = $result->fetch_assoc();
             echo "<form method='post'>";
-            echo "<input type='hidden' name='id' value='" . $row['id'] . "'>";
+            echo "<input type='hidden' name='place_id' value='" . $row['place_id'] . "'>";
             echo "<label for='name'>Name:</label>";
             echo "<input type='text' id='name' name='name' value='" . $row['name'] . "' required>";
             echo "<label for='location'>Location:</label>";
@@ -132,29 +123,22 @@
     ?>
 
     <?php
-    // Database connection
-    $servername = "localhost";
-    $username = "root";
-    $password = "";
-    $dbname = "Tripper";
-
-    // Create connection
+    include("db.php");
+    
     $conn = new mysqli($servername, $username, $password, $dbname);
 
-    // Check connection
     if ($conn->connect_error) {
         die("Connection failed: " . $conn->connect_error);
     }
 
-    if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['id'])) {
-        // Retrieve form data
-        $id = $_POST['id'];
+    if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['place_id'])) {
+        $id = $_POST['place_id'];
         $name = $_POST["name"];
         $location = $_POST["location"];
         $price = $_POST["price"];
 
         // Update data in the database
-        $sql = "UPDATE places SET name='$name', location='$location', price='$price' WHERE id='$id'";
+        $sql = "UPDATE places SET name='$name', location='$location', price='$price' WHERE place_id='$id'";
 
         if ($conn->query($sql) === TRUE) {
             echo "<script> alert('Place Updated Successfully!'); location.href='destinations.php'; </script>";
@@ -171,7 +155,7 @@
     <footer>
         <p>&copy; 2024 Tripper by Kalash Shah</p>
     </footer>
-
+<!--
 </body>
 
 </html>

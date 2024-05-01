@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Travel Planning</title>
+    <title>Trip Planning</title>
     <style>
         /* Reset default browser styles */
         * {
@@ -16,6 +16,36 @@
         body {
             font-family: Arial, sans-serif;
             background-color: #f2f2f2;
+        }
+
+        input[type="text"],
+        textarea,
+        select {
+            width: 250px;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block; /* Added to display each checkbox on a new line */
         }
 
         .container {
@@ -86,7 +116,6 @@
             color: #fff;
             text-align: center;
             padding: 20px 0;
-            position: fixed;
             bottom: 0;
             width: 100%;
         }
@@ -95,93 +124,80 @@
 </head>
 
 <body>
-
-    <header>
-        <h1>Travel Planner</h1>
-        <nav>
-            <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#">About</a></li>
-                <li><a href="#">Contact</a></li>
-            </ul>
-        </nav>
-    </header>
+    <?php include ('header.php') ?>
 
     <div class="container">
-
         <div class="hero">
-            <h1>Plan Your Travel</h1>
+            <h1>Plan Your Trip</h1>
         </div>
-
         <center>
             <form id="savePlanForm" method="POST">
-                <p> Select Locations :</p>
+                <label>Select Locations :</label><br>
                 <?php
-                $servername = "localhost";
-                $username = "root";
-                $password = "";
-                $dbname = "Tripper";
 
-                // Create connection
+                include("db.php");
+                
                 $conn = new mysqli($servername, $username, $password, $dbname);
 
-                // Check connection
                 if ($conn->connect_error) {
                     die("Connection failed: " . $conn->connect_error);
                 }
 
-                // Fetch locations from the database
                 $sql = "SELECT DISTINCT location FROM places";
                 $result = $conn->query($sql);
 
                 // Check if locations exist
                 if ($result->num_rows > 0) {
-                    echo '<select id="location" multiple>';
                     // Output data of each row
                     while ($row = $result->fetch_assoc()) {
-                        echo '<option value="' . $row["location"] . '">' . $row["location"] . '</option>';
+                        echo '<label><input type="checkbox" class="locationCheckbox" name="locations[]" value="' . $row["location"] . '"> ' . $row["location"] . '</label>';
                     }
-                    echo '</select>';
                 } else {
                     echo "No locations found.";
                 }
 
                 $conn->close();
                 ?>
-                <br><br>
-                <div id="placesList"></div>
-
                 <br>
-                Total Cost: <span id="totalCost">0 </span> Rs
+                <label for="">Places :-</label>
+                <div id="placesList"></div><br>
+                <label for="name">Name:</label><br>
+                <input type="text" id="name" name="name">
                 <br>
+                <label for="instructions">Instructions:</label><br>
+                <textarea id="instructions" name="instructions" rows="4" cols="50"></textarea>
+                <br>
+                <label for="">
+                    Total Cost: <span id="totalCost">0 </span> Rs
+                </label> <br>
                 <input class="btn" type="submit" value="Save">
             </form>
         </center>
-
-    </div>
+    </div> <br>
 
     <footer>
-        <p>&copy; 2024 Travel Planner</p>
+        <p>&copy; 2024 Tripper by Kalash Shah</p>
     </footer>
 
     <script>
         $(document).ready(function () {
-            $('#location').change(function () {
-                var selectedLocations = $(this).val();
+            $('.locationCheckbox').change(function () {
+                var selectedLocations = $('.locationCheckbox:checked').map(function () {
+                    return this.value;
+                }).get();
                 $('#planLocation').val(selectedLocations.join(', '));
                 if (selectedLocations.length > 0) {
-                    // Fetch and display places for each selected location
+                    // Clear existing placesList content
+                    $('#placesList').html('');
                     selectedLocations.forEach(function (locationName) {
                         $.ajax({
                             url: 'fetchPlaces.php',
                             type: 'POST',
                             data: { location: locationName },
                             success: function (response) {
-                                // Parse the JSON response
                                 var places = JSON.parse(response);
-                                // Loop through the places and create checkboxes
                                 places.forEach(function (place) {
-                                    $('#placesList').append('<label><input type="checkbox" class="placeCheckbox" data-price="' + place.price + '" value="' + place.id + '"> ' + place.name + ' - ' + place.price + ' Rs </label><input type="hidden" name="placeIds[]" value="' + place.id + '"><br>');
+                                    $('#placesList').append('<label><input type="checkbox" class="placeCheckbox" data-price="' + place.price + '" value="' + place.place_id + '"> ' + place.name + ' - ' + place.price + ' Rs </label><input type="hidden" name="placeIds[]" value="' + place.id + '">');
                                 });
                             }
                         });
@@ -192,6 +208,7 @@
                 }
             });
 
+
             // Listen for checkbox changes
             $(document).on('change', '.placeCheckbox', function () {
                 var totalCost = 0;
@@ -201,11 +218,17 @@
                 $('#totalCost').text(totalCost.toFixed(2));
             });
 
-            // Submit the form to save the plan
             $('#savePlanForm').submit(function (event) {
                 event.preventDefault();
-                var selectedLocations = $('#location').val();
+                var selectedLocations = $('.locationCheckbox:checked').map(function () {
+                    return this.value;
+                }).get();
                 var totalCost = $('#totalCost').text();
+                var name = $('#name').val();
+                var instructions = $('#instructions').val();
+                if (instructions.trim() === '') {
+                    instructions = "-"
+                }
                 var checkedPlaces = $('.placeCheckbox:checked').map(function () {
                     return this.value;
                 }).get();
@@ -213,19 +236,22 @@
                     url: 'savePlan.php',
                     type: 'POST',
                     data: {
+                        name: name,
+                        instructions: instructions,
                         locations: selectedLocations,
                         totalCost: totalCost,
                         places: checkedPlaces
                     },
                     success: function (response) {
                         alert(response);
+                        location.href='plans.php';
                     }
                 });
             });
         });
 
     </script>
-
+<!--
 </body>
 
 </html>

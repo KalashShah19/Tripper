@@ -1,46 +1,40 @@
 <?php
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "Tripper";
 
-// Create connection
+include("db.php");
+
 $conn = new mysqli($servername, $username, $password, $dbname);
 
-// Check connection
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Retrieve data from the form
 $locations = $_POST['locations'];
 $totalCost = $_POST['totalCost'];
 $places = $_POST['places'];
+$name = $_POST['name']; 
+$instructions = $_POST['instructions']; 
 
-// Insert the plan into the database
-$sql = "INSERT INTO plans (total_cost) VALUES (?)";
+$sql = "INSERT INTO plans (plan_name, instructions, total_cost) VALUES (?, ?, ?)";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $totalCost);
-$stmt->execute();
+$stmt->bind_param("sss", $name, $instructions, $totalCost);
 
-// Get the ID of the inserted plan
-$planId = $stmt->insert_id;
+if ($stmt->execute()) {
+    $planId = $stmt->insert_id;
 
-// Insert places into the database for the plan
-foreach ($places as $placeId) {
-    $placeId = (int) $placeId;
-    echo "place id = $placeId";
-    echo "plan id = $planId";
-    $sql = "INSERT INTO plan_places (plan_id, place_id) VALUES (?, ?)";
-    $stmt = $conn->prepare($sql);
+    foreach ($places as $placeId) {
+        $sql2 = "INSERT INTO planplaces (plan_id, place_id) VALUES (?, ?)";
+        $stmt2 = $conn->prepare($sql2);
+        $stmt2->bind_param("ii", $planId, $placeId);
 
-    // Bind parameters with 'i' (integer) type
-    $stmt->bind_param("ii", $planId, $placeId);
-    $stmt->execute();
+        if (!$stmt2->execute()) {
+            echo "Error: " . $sql2 . "<br>" . $conn->error;
+        }
+    }
+
+    echo "Plan saved successfully!";
+} else {
+    echo "Error: " . $sql . "<br>" . $conn->error;
 }
 
-// Close connection
 $conn->close();
-
-echo "Plan saved successfully!";
 ?>

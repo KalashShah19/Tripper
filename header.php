@@ -7,6 +7,7 @@
                 <li><a href="destinations.php">Destinations</a></li>
                 <li><a href="add.php">Add New Place</a></li>
                 <li><a href="plan.php">Plan</a></li>
+                <li><a href="plans.php">Your Plans</a></li>
             </ul>
         </nav>
     </div>

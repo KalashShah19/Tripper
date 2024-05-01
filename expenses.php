@@ -109,7 +109,7 @@
 
         .btn {
             display: inline-block;
-            background-color: blue;
+            background-color: red;
             color: #fff;
             padding: 10px 20px;
             text-decoration: none;
@@ -119,70 +119,82 @@
 </head>
 
 <body>
-    <?php include ('header.php') ?>
+    <?php
+    include ('header.php');
+    $id = $_GET["id"];
+    ?>
 
-    <h2>Places List</h2>
+    <h2>Trip Expenses</h2>
     <center>
-        <a class="btn" href="add.php"> Add New Place </a>
+        <a class="btn" href="budget.php?id=<?php echo $id; ?>"> Add New Expense </a>
     </center>
     <table>
-        <tr>
-            <th>Name</th>
-            <th>Location</th>
-            <th>Price</th>
-            <th>Action</th>
-        </tr>
+    <tr>
+        <th>Name</th>
+        <th>Amount</th>
+        <th>Action</th>
+    </tr>
+    <?php
+    include ("db.php");
 
-        <?php
-        include ("db.php");
+    $id = $_GET["id"];
+    $conn = new mysqli($servername, $username, $password, $dbname);
 
-        $conn = new mysqli($servername, $username, $password, $dbname);
+    if ($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    }
 
-        if ($conn->connect_error) {
-            die("Connection failed: " . $conn->connect_error);
+    $totalExpenses = 0; // Initialize total expenses variable
+
+    $sql = "SELECT * FROM expenses WHERE plan_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result(); 
+    
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            // Add expense amount to total expenses
+            $totalExpenses += $row["amount"];
+
+            echo "<tr>";
+            echo "<td>" . $row["name"] . "</td>";
+            echo "<td>" . $row["amount"] . " Rs </td>";
+            echo "<td>";
+            echo "<button class='btn-edit' onclick='editExpense(" . $row['expense_id'] . ")'>Edit</button>";
+            echo "<button class='btn-delete' onclick='deleteExpense(" . $row['expense_id'] . ")'>Delete</button>";
+            echo "</td>";
+            echo "</tr>";
         }
+    } else {
+        echo "<tr><td colspan='3'>No Expenses yet.</td></tr>";
+    }
 
-        $sql = "SELECT * FROM places";
-        $result = $conn->query($sql);
+    // Display total expenses row
+    echo "<tr><td colspan='2' style='text-align: right;'>Total Expenses:</td><td>" . $totalExpenses . " Rs</td></tr>";
 
-        if ($result->num_rows > 0) {
-            while ($row = $result->fetch_assoc()) {
-                echo "<tr>";
-                echo "<td>" . $row["name"] . "</td>";
-                echo "<td>" . $row["location"] . "</td>";
-                echo "<td>" . $row["price"] . " Rs </td>";
-                echo "<td>";
-                echo "<button class='btn-edit' onclick='editPlace(" . $row['place_id'] . ")'>Edit</button>";
-                echo "<button class='btn-delete' onclick='deletePlace(" . $row['place_id'] . ")'>Delete</button>";
-                echo "</td>";
-                echo "</tr>";
-            }
-        } else {
-            echo "<tr><td colspan='4'>No places found.</td></tr>";
-        }
+    $conn->close();
+    ?>
+</table>
 
-        // Close connection
-        $conn->close();
-        ?>
-
-    </table>
 
     <footer>
         <p>&copy; 2024 Tripper by Kalash Shah</p>
     </footer>
 
     <script>
-        function editPlace(id) {
-            window.location.href = "edit.php?id=" + id;
+        function editExpense(id) {
+            window.location.href = "editExpense.php?id=" + id;
         }
 
-        function deletePlace(id) {
-            if (confirm("Are you sure you want to delete this place?")) {
-                window.location.href = "delete.php?id=" + id;
+        function deleteExpense(id) {
+            if (confirm("Are you sure you want to delete this Expense?")) {
+                window.location.href = "deleteExpense.php?id=" + id;
             }
         }
+
     </script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script>
         $(window).bind("pageshow", function (event) {
             if (event.originalEvent.persisted) {
